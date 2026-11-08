@@ -1,0 +1,579 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sala Segura</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+/* Concepto: una sala segura de survival horror de noche. Un jardín ASCII de flores moradas es el centro,
+   rodeado de interfaz sobria tipo terminal, una nota mecanografiada y un inventario. */
+:root {
+  --ink: #0b0712;
+  --panel: #130c1f;
+  --line: #34234c;
+  --fg: #e9dffa;
+  --dim: #a090bd;
+  --violet: #b57bff;
+  --orchid: #dcc0ff;
+  --blood: #e0475e;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --type: "Special Elite", "Courier New", Courier, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background-color: var(--ink);
+  background-image: radial-gradient(900px 520px at 50% -8%, rgba(125, 62, 205, 0.24), transparent 70%);
+  background-repeat: no-repeat;
+  color: var(--fg);
+  font: 15px/1.6 var(--mono);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 56px;
+  min-height: 100%;
+}
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 26px; }
+
+.bar {
+  display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between;
+  font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim);
+}
+.rec { display: inline-flex; align-items: center; gap: 10px; color: var(--fg); }
+.rec i { width: 9px; height: 9px; border-radius: 50%; background: var(--blood); box-shadow: 0 0 10px var(--blood); animation: blink 1.6s steps(2, jump-none) infinite; }
+@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.25; } 100% { opacity: 1; } }
+
+.frame {
+  position: relative; border: 1px solid var(--line); background: #07040d;
+  box-shadow: 0 0 0 1px rgba(181, 123, 255, 0.05), 0 0 60px rgba(120, 60, 200, 0.18);
+  overflow: hidden;
+}
+.frame canvas { display: block; margin: 0 auto; cursor: crosshair; touch-action: manipulation; }
+.crt {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.6) 100%);
+}
+.hint {
+  position: absolute; left: 12px; bottom: 8px; margin: 0; z-index: 2;
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim);
+}
+
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn {
+  font: 500 13px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 13px 18px; color: var(--orchid); background: transparent;
+  border: 1px solid var(--violet); cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.btn:hover { background: rgba(181, 123, 255, 0.14); box-shadow: 0 0 18px rgba(181, 123, 255, 0.25); }
+.btn:focus-visible { outline: 2px solid var(--orchid); outline-offset: 3px; }
+.btn.primary { background: var(--violet); color: #14091f; font-weight: 600; }
+.btn.primary:hover { background: var(--orchid); }
+.btn.ghost { border-color: var(--line); color: var(--dim); }
+#status { margin: 0; flex: 1 1 240px; min-width: 0; font-size: 13px; color: var(--dim); }
+#status::before { content: "> "; color: var(--violet); }
+
+.title { text-align: center; display: grid; justify-items: center; gap: 10px; padding-block: 8px 4px; }
+.title h1 { margin: 0; line-height: 0; }
+#teamo {
+  margin: 0; white-space: pre; font: 600 clamp(11px, 3.6vw, 30px)/1.08 var(--mono);
+  color: var(--violet); user-select: none;
+  filter: drop-shadow(0 0 12px rgba(181, 123, 255, 0.55));
+  animation: flicker 5s linear infinite;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  #teamo {
+    background: linear-gradient(180deg, var(--orchid) 0%, var(--violet) 55%, #7a3fcb 100%);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent; -webkit-text-fill-color: transparent;
+  }
+}
+@keyframes flicker { 0%, 100% { opacity: 1; } 46% { opacity: 1; } 47% { opacity: 0.82; } 48% { opacity: 1; } 71% { opacity: 1; } 72% { opacity: 0.9; } 73% { opacity: 1; } }
+.sub { margin: 0; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim); }
+.sub b { color: var(--orchid); font-weight: 500; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 26px; align-items: start; }
+.note {
+  background: var(--panel); border: 1px solid var(--line); padding: 26px 28px 24px;
+  font-family: var(--type); font-size: 17px; line-height: 1.75; color: var(--fg);
+}
+.note p { margin: 0 0 14px; max-width: 62ch; }
+.note .tag { font: 500 11px/1.4 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--violet); margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px dashed var(--line); }
+.note .big { font-size: 28px; line-height: 1.2; color: var(--orchid); margin-block: 20px 6px; }
+.note .from { font: 400 13px/1.8 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); margin-bottom: 20px; }
+.note .from b { color: var(--orchid); font-weight: 500; }
+.note .big { margin-bottom: 0; }
+
+.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.items li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 14px; align-items: center; border: 1px solid var(--line); background: rgba(19, 12, 31, 0.6); padding: 14px 16px; }
+.items pre { margin: 0; font: 500 11px/1.15 var(--mono); color: var(--violet); overflow: hidden; }
+.items h3 { margin: 0 0 4px; font: 500 13px/1.35 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--orchid); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.items h3 span { font-size: 11px; color: var(--dim); letter-spacing: 0.1em; }
+.items p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--dim); }
+
+@media (max-width: 760px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .note { padding: 22px 18px 20px; font-size: 16px; }
+  .note .big { font-size: 24px; }
+  .items li { grid-template-columns: 80px minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rec i, #teamo { animation: none; }
+}
+</style>
+
+<main class="wrap">
+  <header class="bar">
+    <span class="rec"><i></i>Sala segura</span>
+    <span>Archivo 14 &middot; Slot 1</span>
+  </header>
+
+  <section class="frame" id="frame" aria-label="Jardín de flores moradas dibujado con caracteres ASCII">
+    <canvas id="garden" role="img" aria-label="Jardín nocturno de flores moradas hecho con caracteres ASCII, con luciérnagas y una luna"></canvas>
+    <div class="crt"></div>
+    <p class="hint">Toca el jardín para plantar una flor</p>
+  </section>
+
+  <div class="controls">
+    <button class="btn primary" id="save" type="button">Guardar partida</button>
+    <button class="btn" id="plant" type="button">Plantar una flor</button>
+    <button class="btn ghost" id="reset" type="button">Reiniciar jardín</button>
+    <p id="status" role="status">Estado: seguro. Sin enemigos a la vista.</p>
+  </div>
+
+  <div class="cols">
+    <article class="note">
+      <p class="tag">Nota encontrada &middot; 1 de 1</p>
+      <p class="from">De: <b>Deni</b><br>Para: <b>Abraham</b></p>
+      <p>Si encontraste esta nota, llegaste a un checkpoint.</p>
+      <p>Hoy cumplimos 5 meses de novios, y este es nuestro punto de guardado. Afuera puede haber lo que sea. Aquí no. Aquí hay flores moradas, amor, y tu loquita que te quiere un montón &lt;3</p>
+      <p>No hay munición limitada, no hay puertas trabadas, no hay nada de qué huir. Solo tú, yo y todo lo que nos falta por recorrer.</p>
+      <p class="big">Te amo ♡</p>
+    </article>
+
+    <ul class="items" aria-label="Inventario">
+      <li>
+        <pre aria-hidden="true">   _
+ _(_)_
+(_)@(_)
+  (_)\
+    `|
+     |/</pre>
+        <div>
+          <h3>Flor morada <span>x&infin;</span></h3>
+          <p>Restaura el ánimo al 100%. Sin efectos secundarios, salvo sonreír.</p>
+        </div>
+      </li>
+      <li>
+        <pre aria-hidden="true">,-----------.
+| (o)---(o) |
+|  \_____/  |
+`-----------'</pre>
+        <div>
+          <h3>Cinta de tinta <span>x&infin;</span></h3>
+          <p>Para guardar cada momento contigo. Sin límite de partidas.</p>
+        </div>
+      </li>
+      <li>
+        <pre aria-hidden="true">  .--.
+ /    \
+ \    /________
+  `--' || || ||</pre>
+        <div>
+          <h3>Llave de nuestra sala segura <span>x1</span></h3>
+          <p>Abre cualquier día malo.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- utilidades ---------- */
+  var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
+  var easeOut = function (u) { return 1 - Math.pow(1 - u, 3); };
+  var easeBack = function (u) { var c = 1.4; return 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); };
+  var TAU = Math.PI * 2;
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- lienzo ---------- */
+  var frame = document.getElementById("frame");
+  var cvs = document.getElementById("garden");
+  var ctx = cvs.getContext("2d");
+  var off = document.createElement("canvas");
+  var octx = off.getContext("2d", { willReadFrequently: true });
+  var S = 3;
+  var RAMP = " .:-=+*x#%@";
+  var cols = 0, rows = 0, cw = 8, ch = 16, fs = 13, dpr = 1;
+  var W = 100, H = 60, GY = 54, U = 60;
+
+  var BASE = [
+    { fx: 0.50, fh: 0.60, R: 0.21, type: "rose", lean: 0,    t0: -1.6, dur: 4.6, ph: 0,   dy: 0 },
+    { fx: 0.28, fh: 0.44, R: 0.135, type: "star", lean: -0.05, t0: -1.0, dur: 4.2, ph: 1.3, dy: 1 },
+    { fx: 0.72, fh: 0.48, R: 0.145, type: "rose", lean: 0.05, t0: -0.6, dur: 4.2, ph: 2.1, dy: 1 },
+    { fx: 0.12, fh: 0.40, R: 0.08, type: "lav",  lean: 0.02, t0: -0.3, dur: 4.0, ph: 0.4, dy: 2 },
+    { fx: 0.88, fh: 0.42, R: 0.08, type: "lav",  lean: -0.02, t0: 0.0, dur: 4.0, ph: 3.1, dy: 2 },
+    { fx: 0.40, fh: 0.30, R: 0.09, type: "star", lean: -0.02, t0: 0.2, dur: 3.6, ph: 0.7, dy: 2 },
+    { fx: 0.60, fh: 0.32, R: 0.09, type: "rose", lean: 0.02, t0: 0.5, dur: 3.6, ph: 2.7, dy: 2 },
+    { fx: 0.19, fh: 0.30, R: 0.07, type: "lav",  lean: -0.02, t0: 0.1, dur: 3.8, ph: 1.9, dy: 3 },
+    { fx: 0.81, fh: 0.28, R: 0.07, type: "lav",  lean: 0.02, t0: 0.4, dur: 3.8, ph: 0.2, dy: 3 },
+    { fx: 0.05, fh: 0.22, R: 0.07, type: "star", lean: 0.01, t0: 0.9, dur: 3.4, ph: 2.2, dy: 3 },
+    { fx: 0.95, fh: 0.24, R: 0.07, type: "star", lean: -0.01, t0: 1.1, dur: 3.4, ph: 1.1, dy: 3 },
+    { fx: 0.34, fh: 0.17, R: 0.06, type: "rose", lean: 0,    t0: 1.2, dur: 3.0, ph: 0.9, dy: 4 },
+    { fx: 0.66, fh: 0.18, R: 0.06, type: "star", lean: 0,    t0: 1.4, dur: 3.0, ph: 3.3, dy: 4 }
+  ];
+  var planted = [];
+  var blades = [], stars = [], spores = [], bursts = [];
+  var t = reduced ? 30 : 0;
+  var baseStart = 0;
+
+  function gy(x) { return GY + Math.sin(x * 0.13) * 0.9 + Math.sin(x * 0.05 + 1) * 1.4; }
+
+  function genScenery() {
+    var r = rng(7);
+    blades = []; stars = []; spores = [];
+    var nb = Math.round(W * 1.5);
+    for (var i = 0; i < nb; i++) blades.push({ x: r() * W, h: 0.05 + r() * 0.08, ph: r() * 6, bend: (r() - 0.5) * 1.2, d: r() * 4 });
+    for (var j = 0; j < 36; j++) stars.push({ x: r() * W, y: r() * H * 0.5, ph: r() * 6, r: 0.3 + r() * 0.35 });
+    var ns = Math.round(W * 0.35);
+    for (var k = 0; k < ns; k++) spores.push({ x: r() * W, y: r() * H, vx: (r() - 0.5) * 0.8, vy: -(0.8 + r() * 2.2), ph: r() * 6, r: 0.6 + r() * 0.7 });
+  }
+
+  function layout() {
+    var wpx = Math.floor(frame.clientWidth);
+    if (!wpx) return;
+    fs = clamp(wpx / 72, 8, 15);
+    cw = fs * 0.6; ch = fs * 1.2;
+    var hpx = clamp(wpx * 0.6, 380, 640);
+    cols = Math.floor(wpx / cw); rows = Math.floor(hpx / ch);
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var cssW = cols * cw, cssH = rows * ch;
+    cvs.style.width = cssW + "px"; cvs.style.height = cssH + "px";
+    cvs.width = Math.round(cssW * dpr); cvs.height = Math.round(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.font = "500 " + fs + "px \"IBM Plex Mono\", ui-monospace, Menlo, Consolas, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    off.width = cols * S; off.height = rows * S;
+    W = cols; H = rows * 2; GY = H * 0.9; U = Math.min(H, W * 0.62);
+    genScenery();
+    if (reduced) render();
+  }
+
+  /* ---------- flores ---------- */
+  function glow(o, x, y, R, a) {
+    var g = o.createRadialGradient(x, y, 0, x, y, R * 1.6);
+    g.addColorStop(0, "rgba(150,80,255," + a + ")");
+    g.addColorStop(1, "rgba(150,80,255,0)");
+    o.fillStyle = g; o.beginPath(); o.arc(x, y, R * 1.6, 0, TAU); o.fill();
+  }
+
+  function bloomRose(o, x, y, R, tt, ph) {
+    glow(o, x, y, R, 0.3);
+    var layers = [
+      { n: 9, L: 1.0,  w: 0.32, c1: "#4f2292", c2: "#8a4de0" },
+      { n: 7, L: 0.78, w: 0.34, c1: "#7339c4", c2: "#b57bff" },
+      { n: 6, L: 0.54, w: 0.38, c1: "#a066ee", c2: "#d9b8ff" },
+      { n: 5, L: 0.30, w: 0.46, c1: "#c99bff", c2: "#f3e6ff" }
+    ];
+    for (var li = 0; li < layers.length; li++) {
+      var ly = layers[li], len = R * ly.L;
+      for (var i = 0; i < ly.n; i++) {
+        var a = (i / ly.n) * TAU + li * 0.5 + Math.sin(tt * 0.5 + ph) * 0.05;
+        o.save(); o.translate(x, y); o.rotate(a);
+        var g = o.createLinearGradient(0, 0, len, 0);
+        g.addColorStop(0, ly.c1); g.addColorStop(1, ly.c2);
+        o.fillStyle = g;
+        o.beginPath(); o.ellipse(len * 0.52, 0, len * 0.5, len * ly.w, 0, 0, TAU); o.fill();
+        o.strokeStyle = "rgba(20,5,40,0.6)"; o.lineWidth = 0.35; o.stroke();
+        o.restore();
+      }
+    }
+    o.fillStyle = "#fff1b8"; o.beginPath(); o.arc(x, y, Math.max(0.2, R * 0.09), 0, TAU); o.fill();
+  }
+
+  function bloomStar(o, x, y, R, tt, ph) {
+    glow(o, x, y, R, 0.26);
+    var sets = [
+      { n: 6, L: 1.0,  w: 0.42, rot: 0,           c1: "#5f2eab", c2: "#a874f0" },
+      { n: 6, L: 0.68, w: 0.38, rot: Math.PI / 6, c1: "#8d55da", c2: "#dcc0ff" }
+    ];
+    for (var si = 0; si < sets.length; si++) {
+      var s = sets[si], len = R * s.L, wid = len * s.w;
+      for (var i = 0; i < s.n; i++) {
+        var a = (i / s.n) * TAU + s.rot + Math.sin(tt * 0.6 + ph) * 0.06;
+        o.save(); o.translate(x, y); o.rotate(a);
+        var g = o.createLinearGradient(0, 0, len, 0);
+        g.addColorStop(0, s.c1); g.addColorStop(1, s.c2);
+        o.fillStyle = g;
+        o.beginPath(); o.moveTo(0, 0);
+        o.bezierCurveTo(len * 0.25, -wid * 1.5, len * 0.8, -wid, len, 0);
+        o.bezierCurveTo(len * 0.8, wid, len * 0.25, wid * 1.5, 0, 0);
+        o.fill();
+        o.strokeStyle = "rgba(20,5,40,0.6)"; o.lineWidth = 0.35; o.stroke();
+        o.restore();
+      }
+    }
+    o.fillStyle = "#fff1b8"; o.beginPath(); o.arc(x, y, Math.max(0.2, R * 0.1), 0, TAU); o.fill();
+  }
+
+  function drawFlower(o, f, tt, t0) {
+    var age = (tt - t0) / f.dur;
+    if (age <= 0) return;
+    var sg = easeOut(clamp(age / 0.7, 0, 1));
+    var open = age < 0.55 ? 0 : easeBack(clamp((age - 0.55) / 0.45, 0, 1));
+    var bx = f.fx * W, by = gy(bx) + f.dy;
+    var tx = bx + f.lean * U, ty = by - f.fh * H;
+    var sw = Math.sin(tt * 0.9 + f.ph) * 0.02 * U;
+    var p1x = bx + f.lean * U * 0.1, p1y = by - (by - ty) * 0.45;
+    var p2x = tx + sw * 0.4 - f.lean * U * 0.3, p2y = by - (by - ty) * 0.8;
+    var p3x = tx + sw, p3y = ty;
+    function pt(u) {
+      var v = 1 - u, a = v * v * v, b = 3 * v * v * u, c = 3 * v * u * u, d = u * u * u;
+      return [a * bx + b * p1x + c * p2x + d * p3x, a * by + b * p1y + c * p2y + d * p3y];
+    }
+    o.lineCap = "round"; o.lineJoin = "round";
+    o.strokeStyle = "rgba(92,184,132,0.92)";
+    o.lineWidth = f.type === "lav" ? 0.75 : 0.95;
+    o.beginPath(); o.moveTo(bx, by);
+    for (var i = 1; i <= 24; i++) { var q = pt(sg * i / 24); o.lineTo(q[0], q[1]); }
+    o.stroke();
+
+    var leaves = [[0.28, -1], [0.5, 1]];
+    for (var li = 0; li < leaves.length; li++) {
+      var u = leaves[li][0], dir = leaves[li][1];
+      if (sg <= u) continue;
+      var p = pt(u), len = U * 0.09 * clamp((sg - u) / 0.2, 0, 1);
+      o.save(); o.translate(p[0], p[1]); o.rotate(dir < 0 ? Math.PI + 0.6 : -0.6);
+      o.fillStyle = "rgba(72,152,106,0.95)";
+      o.beginPath(); o.ellipse(len / 2, 0, len / 2, Math.max(0.2, len * 0.2), 0, 0, TAU); o.fill();
+      o.restore();
+    }
+
+    if (open <= 0) return;
+    var tip = pt(sg), R = f.R * U * open;
+    if (f.type === "rose") bloomRose(o, tip[0], tip[1], R, tt, f.ph);
+    else if (f.type === "star") bloomStar(o, tip[0], tip[1], R, tt, f.ph);
+    else {
+      var s = f.R * U, n = 9;
+      for (var k = 0; k < n; k++) {
+        if (k / n > open * 1.1) break;
+        var pp = pt(0.5 + 0.5 * (k / (n - 1)));
+        var shrink = 1 - 0.45 * (k / n);
+        for (var side = -1; side <= 1; side += 2) {
+          o.save(); o.translate(pp[0] + side * s * 0.2, pp[1] - 0.3 * k * 0);
+          o.rotate(side * 0.5);
+          o.fillStyle = (k + (side > 0 ? 1 : 0)) % 2 ? "#b57bff" : "#8a4de0";
+          o.beginPath(); o.ellipse(0, 0, s * 0.3 * shrink, s * 0.2 * shrink + 0.3, 0, 0, TAU); o.fill();
+          o.strokeStyle = "rgba(20,5,40,0.5)"; o.lineWidth = 0.25; o.stroke();
+          o.restore();
+        }
+      }
+      glow(o, tip[0], tip[1] + s * 0.4, s * 0.8, 0.2);
+    }
+  }
+
+  /* ---------- fondo ---------- */
+  function drawBackdrop(o) {
+    var g = o.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "rgba(40,20,80,0)"); g.addColorStop(0.7, "rgba(80,40,135,0.2)"); g.addColorStop(1, "rgba(70,35,115,0.38)");
+    o.fillStyle = g; o.fillRect(0, 0, W, H);
+
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i], a = 0.35 + 0.35 * Math.sin(t * 1.4 + s.ph);
+      o.fillStyle = "rgba(225,210,255," + a.toFixed(2) + ")";
+      o.beginPath(); o.arc(s.x, s.y, s.r, 0, TAU); o.fill();
+    }
+
+    var mx = W * 0.85, my = H * 0.2, mr = Math.min(H * 0.1, W * 0.07);
+    var mg = o.createRadialGradient(mx, my, mr * 0.8, mx, my, mr * 2.8);
+    mg.addColorStop(0, "rgba(190,160,255,0.2)"); mg.addColorStop(1, "rgba(190,160,255,0)");
+    o.fillStyle = mg; o.beginPath(); o.arc(mx, my, mr * 2.8, 0, TAU); o.fill();
+    var md = o.createRadialGradient(mx - mr * 0.3, my - mr * 0.3, 0, mx, my, mr);
+    md.addColorStop(0, "rgba(235,222,255,0.6)"); md.addColorStop(1, "rgba(180,155,235,0.42)");
+    o.fillStyle = md; o.beginPath(); o.arc(mx, my, mr, 0, TAU); o.fill();
+    o.fillStyle = "rgba(90,60,150,0.3)";
+    o.beginPath(); o.arc(mx + mr * 0.3, my + mr * 0.2, mr * 0.2, 0, TAU); o.fill();
+    o.beginPath(); o.arc(mx - mr * 0.35, my + mr * 0.35, mr * 0.13, 0, TAU); o.fill();
+  }
+
+  function drawGround(o) {
+    var g = o.createLinearGradient(0, GY - 2, 0, H);
+    g.addColorStop(0, "rgba(105,58,175,0.55)"); g.addColorStop(1, "rgba(38,20,64,0.3)");
+    o.fillStyle = g;
+    o.beginPath(); o.moveTo(0, H); o.lineTo(0, gy(0));
+    for (var x = 0; x <= W; x += 2) o.lineTo(x, gy(x));
+    o.lineTo(W, gy(W)); o.lineTo(W, H); o.closePath(); o.fill();
+  }
+
+  function drawBlades(o) {
+    o.lineCap = "round"; o.lineWidth = 0.5; o.strokeStyle = "rgba(88,172,126,0.6)";
+    o.beginPath();
+    for (var i = 0; i < blades.length; i++) {
+      var b = blades[i], y0 = gy(b.x) + 1 + b.d * 0.3, h = b.h * U;
+      var lean = Math.sin(t * 1.2 + b.ph) * 0.6 + b.bend;
+      o.moveTo(b.x, y0); o.quadraticCurveTo(b.x, y0 - h * 0.6, b.x + lean, y0 - h);
+    }
+    o.stroke();
+  }
+
+  function drawSpores(o) {
+    var i, s, a;
+    for (i = 0; i < spores.length; i++) {
+      s = spores[i];
+      a = 0.4 + 0.5 * Math.sin(t * 2 + s.ph);
+      o.fillStyle = "rgba(236,218,255," + clamp(a, 0, 1).toFixed(2) + ")";
+      o.beginPath(); o.arc(s.x, s.y, s.r, 0, TAU); o.fill();
+    }
+    for (i = 0; i < bursts.length; i++) {
+      s = bursts[i];
+      a = clamp(s.life, 0, 1);
+      o.fillStyle = "rgba(255,230,255," + a.toFixed(2) + ")";
+      o.beginPath(); o.arc(s.x, s.y, s.r, 0, TAU); o.fill();
+    }
+  }
+
+  function updateSpores(dt) {
+    var i, s;
+    for (i = 0; i < spores.length; i++) {
+      s = spores[i];
+      s.x += s.vx * dt + Math.sin(t * 1.3 + s.ph) * 0.03;
+      s.y += s.vy * dt;
+      if (s.y < -2) { s.y = H + 2; s.x = Math.random() * W; }
+      if (s.x < -2) s.x = W + 2; else if (s.x > W + 2) s.x = -2;
+    }
+    for (i = bursts.length - 1; i >= 0; i--) {
+      s = bursts[i];
+      s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 4 * dt; s.life -= dt * 0.55;
+      if (s.life <= 0) bursts.splice(i, 1);
+    }
+  }
+
+  /* ---------- de escena a ASCII ---------- */
+  function toAscii() {
+    var ow = off.width, oh = off.height;
+    var data = octx.getImageData(0, 0, ow, oh).data;
+    ctx.clearRect(0, 0, cols * cw, rows * ch);
+    var n = RAMP.length, area = S * S;
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        var R = 0, G = 0, B = 0;
+        for (var dy = 0; dy < S; dy++) {
+          var rowBase = ((r * S + dy) * ow + c * S) * 4;
+          for (var dx = 0; dx < S; dx++) {
+            var i = rowBase + dx * 4, a = data[i + 3] / 255;
+            R += data[i] * a; G += data[i + 1] * a; B += data[i + 2] * a;
+          }
+        }
+        R /= area; G /= area; B /= area;
+        var lum = (0.3 * R + 0.59 * G + 0.11 * B) / 255;
+        if (lum < 0.05) continue;
+        var idx = Math.min(n - 1, Math.floor(Math.pow(lum, 0.7) * n));
+        var chr = RAMP.charAt(idx);
+        if (chr === " ") continue;
+        var m = Math.max(R, G, B);
+        var k = (80 + 175 * Math.min(1, lum * 1.4)) / m;
+        ctx.fillStyle = "rgb(" + Math.min(255, R * k | 0) + "," + Math.min(255, G * k | 0) + "," + Math.min(255, B * k | 0) + ")";
+        ctx.fillText(chr, (c + 0.5) * cw, (r + 0.5) * ch);
+      }
+    }
+  }
+
+  function render() {
+    if (!cols) return;
+    octx.setTransform(1, 0, 0, 1, 0, 0);
+    octx.clearRect(0, 0, off.width, off.height);
+    octx.setTransform(S, 0, 0, S / 2, 0, 0);
+    drawBackdrop(octx);
+    drawGround(octx);
+    drawBlades(octx);
+    var list = [], i;
+    for (i = 0; i < BASE.length; i++) list.push({ f: BASE[i], t0: BASE[i].t0 + baseStart });
+    for (i = 0; i < planted.length; i++) list.push({ f: planted[i], t0: planted[i].t0 });
+    list.sort(function (a, b) { return a.f.dy - b.f.dy; });
+    for (i = 0; i < list.length; i++) drawFlower(octx, list[i].f, t, list[i].t0);
+    drawSpores(octx);
+    toAscii();
+  }
+
+  /* ---------- interacción ---------- */
+  var status = document.getElementById("status");
+  var TYPES = ["rose", "star", "lav"];
+
+  function plantAt(fx, fh) {
+    planted.push({
+      fx: clamp(fx, 0.03, 0.97), fh: clamp(fh, 0.14, 0.68),
+      R: 0.07 + Math.random() * 0.06, type: TYPES[Math.floor(Math.random() * 3)],
+      lean: (Math.random() - 0.5) * 0.08, t0: reduced ? t - 10 : t, dur: 3.2,
+      ph: Math.random() * 6, dy: 3 + Math.random() * 1.5
+    });
+    if (planted.length > 24) planted.shift();
+    if (reduced) render();
+  }
+
+  cvs.addEventListener("pointerdown", function (e) {
+    var rect = cvs.getBoundingClientRect();
+    var x = (e.clientX - rect.left) / cw, y = ((e.clientY - rect.top) / ch) * 2;
+    plantAt(x / W, (gy(x) - y) / H);
+    status.textContent = "Una flor más en la sala segura.";
+  });
+
+  function burst() {
+    for (var i = 0; i < 60; i++) {
+      var ang = Math.random() * TAU, sp = 3 + Math.random() * 9;
+      bursts.push({ x: W * 0.5 + (Math.random() - 0.5) * W * 0.3, y: H * 0.45 + (Math.random() - 0.5) * H * 0.2,
+        vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp * 0.7 - 4, r: 0.6 + Math.random() * 0.8, life: 1.6 + Math.random() });
+    }
+    if (reduced) render();
+  }
+
+  document.getElementById("save").addEventListener("click", function () {
+    burst();
+    status.textContent = "Partida guardada. Slot 1: tú y yo.";
+  });
+  document.getElementById("plant").addEventListener("click", function () {
+    plantAt(0.08 + Math.random() * 0.84, 0.2 + Math.random() * 0.35);
+    status.textContent = "Una flor más en la sala segura.";
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    planted.length = 0; bursts.length = 0;
+    baseStart = reduced ? -30 : t;
+    status.textContent = "Estado: seguro. Sin enemigos a la vista.";
+    if (reduced) render();
+  });
+
+  /* ---------- bucle ---------- */
+  var last = 0;
+  function frameLoop(now) {
+    requestAnimationFrame(frameLoop);
+    if (!last) last = now;
+    if (now - last < 33) return;
+    var dt = Math.min(0.1, (now - last) / 1000);
+    last = now; t += dt;
+    updateSpores(dt);
+    render();
+  }
+
+  layout();
+  if (window.ResizeObserver) new ResizeObserver(function () { layout(); }).observe(frame);
+  else window.addEventListener("resize", layout);
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load("500 14px \"IBM Plex Mono\"").then(function () { if (reduced) render(); }).catch(function () {});
+  }
+  if (reduced) { baseStart = -30; render(); }
+  else requestAnimationFrame(frameLoop);
+})();
+</script>
+
+</body></html>
